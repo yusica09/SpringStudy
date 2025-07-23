@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper   
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"   
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="kr.spring.board.dao.BoardMapper">
+	<!-- 글의 전체/검색 레코드 수 -->
+	<!-- @Param 어노테이션 사용시 parameterType 생략 또는 map으로 처리 가능 -->
+	<select id="selectRowCount" resultType="integer">
+		SELECT
+		  COUNT(*)
+		FROM slpboard JOIN slpmember 
+		USING (mem_num) 
+		<where>
+			<if test="keyword != null and keyword !=''">
+				<if test="keyfield == 1">
+					title LIKE '%' || #{keyword} || '%'
+				</if>
+				<if test="keyfield == 2">
+					id LIKE '%' || #{keyword} || '%'
+				</if>
+				<if test="keyfield == 3">
+					content LIKE '%' || #{keyword} || '%'
+				</if>
+				<if test="keyfield == 4">
+					title LIKE '%' || #{keyword} || '%' or
+					id LIKE '%' || #{keyword} || '%' or
+					content LIKE '%' || #{keyword} || '%'
+				</if>
+			</if>
+		</where> 
+	</select>
+	
+	<!-- 글의 전체/검색 목록 -->
+	<select id="selectList" parameterType="map"
+	                        resultType="boardVO">
+		SELECT
+		  *
+		FROM (SELECT
+		        a.*,
+		        rownum rnum
+		      FROM (SELECT
+		              board_num,
+		              <![CDATA[
+		              REPLACE(REPLACE(title,'<','&lt;'),'>','&gt;') title,
+		              ]]>
+		              hit,
+		              reg_date,
+		              mem_num,
+		              id
+		            FROM slpboard 
+		            JOIN slpmember USING(mem_num)
+		            <where>
+						<if test="keyword != null and keyword !=''">
+							<if test="keyfield == 1">
+								title LIKE '%' || #{keyword} || '%'
+							</if>
+							<if test="keyfield == 2">
+								id LIKE '%' || #{keyword} || '%'
+							</if>
+							<if test="keyfield == 3">
+								content LIKE '%' || #{keyword} || '%'
+							</if>
+							<if test="keyfield == 4">
+								title LIKE '%' || #{keyword} || '%' or
+								id LIKE '%' || #{keyword} || '%' or
+								content LIKE '%' || #{keyword} || '%'
+							</if>
+						</if>
+					</where> 
+		            ORDER BY board_num DESC)a)
+		<![CDATA[
+		WHERE rnum >= #{start} AND rnum <= #{end}
+		]]>			
+	</select>
+	
+	<!-- 글수정 -->
+	<update id="updateBoard" parameterType="boardVO">
+		UPDATE slpboard SET
+			<if test="filename != null">
+			filename=#{filename},
+			</if>
+			title=#{title},
+			content=#{content},
+			ip=#{ip},
+			modify_date=SYSDATE
+		WHERE board_num=#{board_num}
+	</update>
+	
+	<!-- 댓글 목록 -->
+	<select id="selectListReply" parameterType="map"
+	                        resultType="boardReplyVO">
+		SELECT
+		  *
+		FROM (SELECT
+		        a.*,
+		        rownum rnum
+		      FROM (SELECT
+		              *
+		            FROM slpboard_reply
+		            JOIN slpmember
+		            USING(mem_num)
+		            WHERE board_num=#{board_num}
+		            ORDER BY re_num DESC)a)
+		<![CDATA[
+		WHERE rnum >= #{start} AND rnum <= #{end}
+		]]>                        
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
